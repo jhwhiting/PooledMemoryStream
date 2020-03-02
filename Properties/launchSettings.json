@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "PooledMemoryStreamDemo": {
+      "commandName": "Project",
+      "commandLineArgs": "--pooled"
+    }
+  }
+}

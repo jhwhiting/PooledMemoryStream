@@ -115,12 +115,20 @@ namespace PooledMemoryStreamDemo
                 {
                     if (count <= 0 || offset >= buffer.Length || _position >= _length) return read;
 
-                    buffer[offset++] = segment[segmentOffset++];
+                    int copyExtent = count;
+                    if (_segmentSize < copyExtent) copyExtent = _segmentSize;
+                    if (buffer.Length < copyExtent) copyExtent = buffer.Length;
+                    int remainingChunk = (int)(_length - _position);
+                    if (remainingChunk < copyExtent) copyExtent = remainingChunk;
 
-                    count--;
-                    read++;
+                    Buffer.BlockCopy(segment, segmentOffset, buffer, offset, copyExtent);
 
-                    _position++;
+                    offset += copyExtent;
+                    segmentOffset += copyExtent;
+                    count -= copyExtent;
+                    read += copyExtent;
+
+                    _position += copyExtent;
                 }
             }
 
@@ -174,13 +182,19 @@ namespace PooledMemoryStreamDemo
 
                 while (count > 0 && offset < buffer.Length && segmentOffset < _segmentSize)
                 {
-                    segment[segmentOffset++] = buffer[offset++];
+                    int copyExtent = count;
+                    if (_segmentSize < copyExtent) copyExtent = _segmentSize;
+                    if (buffer.Length < copyExtent) copyExtent = buffer.Length;
 
-                    _position++;
+                    Buffer.BlockCopy(buffer, offset, segment, segmentOffset, copyExtent);
 
-                    if (_position > _length) _length++;
+                    offset += copyExtent;
+                    segmentOffset += copyExtent;
+                    count -= copyExtent;
 
-                    count--;
+                    _position += copyExtent;
+
+                    if (_position > _length) _length = _position;
                 }
             }
         }
