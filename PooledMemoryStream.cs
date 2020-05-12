@@ -116,10 +116,13 @@ namespace PooledMemoryStreamDemo
                     if (count <= 0 || offset >= buffer.Length || _position >= _length) return read;
 
                     int copyExtent = count;
-                    if (_segmentSize < copyExtent) copyExtent = _segmentSize;
+                    if (copyExtent >= _segmentSize) copyExtent = _segmentSize;
+
+                    if ((copyExtent + segmentOffset) > _segmentSize) copyExtent = _segmentSize - segmentOffset;
                     if (buffer.Length < copyExtent) copyExtent = buffer.Length;
+
                     int remainingChunk = (int)(_length - _position);
-                    if (remainingChunk < copyExtent) copyExtent = remainingChunk;
+                    if (copyExtent >= remainingChunk) copyExtent = remainingChunk;
 
                     Buffer.BlockCopy(segment, segmentOffset, buffer, offset, copyExtent);
 
@@ -185,6 +188,8 @@ namespace PooledMemoryStreamDemo
                     int copyExtent = count;
                     if (_segmentSize < copyExtent) copyExtent = _segmentSize;
                     if (buffer.Length < copyExtent) copyExtent = buffer.Length;
+                    int remaining = _segmentSize - segmentOffset;
+                    if (remaining < copyExtent) copyExtent = remaining;
 
                     Buffer.BlockCopy(buffer, offset, segment, segmentOffset, copyExtent);
 
@@ -208,8 +213,14 @@ namespace PooledMemoryStreamDemo
             GC.SuppressFinalize(this);
         }
 
+        private bool _closed = false;
+
         public override void Close()
         {
+            if (_closed) return;
+
+            _closed = true;
+
             while (_byteArrays.Count > 0)
             {
                 int i = _byteArrays.Count - 1;
@@ -226,6 +237,11 @@ namespace PooledMemoryStreamDemo
             _position = 0;
 
             Dispose(false);
+        }
+
+        ~PooledMemoryStream()
+        {
+            Close();
         }
     }
 }
